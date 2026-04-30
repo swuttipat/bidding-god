@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0d0b1e">
+<title>Bidding God 🔨 v1.8</title>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0d0b1e;--sur:#1a1733;--sur2:#231f45;--sur3:#2d2860;
+  --gold:#f5c842;--gold2:#e0a800;
+  --purple:#7b2fd4;--purple2:#5a1fa0;
+  --green:#2dd470;--red:#ff4d6d;
+  --text:#f0ecff;--muted:#8b85b0;
+  --r:14px;--rc:18px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;-webkit-tap-highlight-color:transparent}
+.screen{display:none;flex-direction:column;min-height:100dvh}
+.screen.active{display:flex}
+@keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pk{0%{transform:scale(.85);opacity:0}70%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+@keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes sp{to{transform:rotate(360deg)}}
+@keyframes pu{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── Layout ── */
+.scroll{flex:1;overflow-y:auto;padding:16px}
+.top-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--sur);border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;z-index:10}
+
+/* ── Typography ── */
+h1{font-size:clamp(28px,8vw,44px);font-weight:900;line-height:1.1}
+h2{font-size:clamp(20px,5vw,28px);font-weight:800}
+.sm{font-size:13px;color:var(--muted)}
+.tc{text-align:center}
+.col{display:flex;flex-direction:column}
+.row{display:flex;align-items:center}
+.sp{justify-content:space-between}
+.gap4{gap:4px}.gap8{gap:8px}.gap12{gap:12px}.gap16{gap:16px}
+.fill{flex:1}
+
+/* ── Logo ── */
+.logo-wrap{padding:48px 24px 28px;text-align:center}
+.logo-em{font-size:64px;display:block;animation:fl 3s ease-in-out infinite}
+.logo-title{font-size:clamp(32px,10vw,54px);font-weight:900;letter-spacing:-1px;
+  background:linear-gradient(135deg,var(--gold),#ff9500,var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo-sub{color:var(--muted);font-size:13px;margin-top:4px}
+
+/* ── Cards ── */
+.card{background:var(--sur);border-radius:var(--rc);padding:16px;border:1px solid rgba(255,255,255,.06)}
+.card-dark{background:var(--sur2);border-radius:var(--r);padding:14px}
+
+/* ── Inputs ── */
+input,select{width:100%;padding:14px;border-radius:var(--r);background:var(--sur2);border:2px solid transparent;color:var(--text);font-size:16px;outline:none;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--purple)}
+input::placeholder{color:var(--muted)}
+.code-input{text-transform:uppercase;letter-spacing:6px;font-size:22px;font-weight:800;text-align:center;font-family:monospace}
+
+/* ── Buttons ── */
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:15px;border-radius:var(--r);font-size:16px;font-weight:700;border:none;cursor:pointer;transition:transform .1s,opacity .1s;-webkit-user-select:none;user-select:none}
+.btn:active{transform:scale(.97);opacity:.9}
+.btn:disabled{opacity:.4;pointer-events:none}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a0f00}
+.btn-purple{background:linear-gradient(135deg,var(--purple),var(--purple2));color:#fff}
+.btn-outline{background:transparent;border:2px solid var(--purple);color:var(--purple)}
+.btn-ghost{background:var(--sur2);color:var(--text)}
+.btn-red{background:var(--red);color:#fff}
+.btn-sm{padding:9px 14px;font-size:13px;width:auto;border-radius:10px}
+
+/* ── Room code badge ── */
+.room-badge{background:var(--sur2);border-radius:var(--rc);padding:14px;text-align:center}
+.room-badge .label{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--muted)}
+.room-badge .code{font-size:34px;font-weight:900;letter-spacing:8px;color:var(--gold);font-family:monospace}
+
+/* ── Player list ── */
+.player-list{display:flex;flex-direction:column;gap:7px}
+.player-row{display:flex;align-items:center;gap:10px;background:var(--sur2);border-radius:12px;padding:10px 13px}
+.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0}
+.p-tag{font-size:11px;color:var(--gold);background:rgba(245,200,66,.12);padding:2px 7px;border-radius:5px;font-weight:700}
+
+/* ── Item card ── */
+.item-card{background:linear-gradient(135deg,var(--sur2),#2a2255);border-radius:20px;padding:22px 18px;text-align:center;border:1px solid rgba(123,47,212,.35);position:relative;overflow:hidden}
+.item-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top,rgba(123,47,212,.18),transparent 65%);pointer-events:none}
+.item-em{font-size:68px;display:block;margin-bottom:6px}
+.item-name{font-size:clamp(18px,5vw,24px);font-weight:900;margin-bottom:4px}
+.item-desc{font-size:13px;color:var(--muted);margin-bottom:14px}
+.item-val{display:inline-flex;align-items:center;gap:6px;background:rgba(245,200,66,.13);border:1px solid rgba(245,200,66,.3);border-radius:999px;padding:5px 14px;color:var(--gold);font-weight:700;font-size:15px}
+.item-val.blind{background:rgba(139,133,176,.1);border-color:rgba(139,133,176,.3);color:var(--muted);letter-spacing:3px}
+/* Blind mode toggle */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--sur2);border-radius:var(--r);padding:12px 14px}
+.toggle-switch{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-track{position:absolute;inset:0;background:var(--sur3);border-radius:999px;cursor:pointer;transition:background .2s}
+.toggle-switch input:checked+.toggle-track{background:var(--purple)}
+.toggle-track::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .2s}
+.toggle-switch input:checked+.toggle-track::before{transform:translateX(20px)}
+
+/* ── Timer ── */
+.timer-wrap{display:flex;justify-content:center;margin-bottom:10px}
+.timer-circle{position:relative;width:72px;height:72px;display:flex;align-items:center;justify-content:center}
+.timer-circle svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.timer-circle circle{fill:none;stroke-width:5;stroke-linecap:round}
+.t-bg{stroke:var(--sur2)}
+.t-fg{stroke:var(--gold);transition:stroke-dashoffset .9s linear,stroke .3s}
+.t-num{font-size:22px;font-weight:900;position:relative;z-index:1}
+.danger{color:var(--red)}
+
+/* ── Bid display ── */
+.bid-box{background:var(--sur2);border-radius:var(--r);padding:13px;text-align:center;margin-bottom:10px}
+.bid-label{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:2px}
+.bid-amount{font-size:30px;font-weight:900;color:var(--gold)}
+.bid-who{font-size:12px;color:var(--muted);margin-top:2px}
+
+/* ── Quick bid grid ── */
+.bid-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.custom-row{display:flex;gap:8px;margin-bottom:8px}
+.custom-row input{flex:1}
+
+/* ── Bidder chips ── */
+.chips{display:flex;flex-wrap:wrap;gap:5px;padding:0 16px 8px}
+.chip{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--sur2);border:1px solid transparent}
+.chip.top{border-color:var(--gold);color:var(--gold)}
+.chip.passed{opacity:.35;text-decoration:line-through}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--muted)}
+.chip.top .dot{background:var(--gold)}
+.chip.passed .dot{background:var(--red)}
+
+/* ── Feed ── */
+.feed{padding:0 16px 6px}
+.feed-title{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:5px}
+.feed-list{display:flex;flex-direction:column;gap:3px;max-height:84px;overflow-y:auto}
+.feed-item{font-size:12px;color:var(--muted)}
+.feed-item .name{color:var(--text);font-weight:600}
+.feed-item .coins{color:var(--gold);font-weight:700}
+
+/* ── Round progress bar ── */
+.rbar{height:4px;background:var(--sur2);overflow:hidden}
+.rbar-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--gold));transition:width .4s}
+
+/* ── Round end ── */
+.win-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center}
+.win-em{font-size:80px;animation:pk .5s cubic-bezier(.36,.07,.19,.97)}
+.win-lbl{font-size:12px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-top:12px}
+.win-name{font-size:clamp(22px,7vw,34px);font-weight:900;color:var(--gold);margin-top:4px}
+.win-det{font-size:14px;color:var(--muted);margin-top:6px}
+.next-lbl{font-size:13px;color:var(--muted);margin-top:20px}
+
+/* ── Game end ── */
+.podium-wrap{display:flex;align-items:flex-end;justify-content:center;gap:10px;height:155px;margin-bottom:28px}
+.podium-slot{display:flex;flex-direction:column;align-items:center;flex:1;max-width:105px}
+.podium-crown{font-size:26px}
+.podium-name{font-size:12px;font-weight:700;text-align:center;margin:3px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:85px}
+.podium-score{font-size:11px;color:var(--gold);font-weight:700}
+.podium-block{width:100%;border-radius:10px 10px 0 0}
+.p1 .podium-block{height:95px;background:linear-gradient(180deg,#f5c842,#e0a800)}
+.p2 .podium-block{height:66px;background:linear-gradient(180deg,#c0c0c0,#909090)}
+.p3 .podium-block{height:48px;background:linear-gradient(180deg,#cd7f32,#a05a1a)}
+.final-list{display:flex;flex-direction:column;gap:9px}
+.final-row{display:flex;align-items:center;gap:11px;background:var(--sur);border-radius:var(--rc);padding:13px;border:1px solid rgba(255,255,255,.06)}
+.final-rank{font-size:18px;font-weight:900;width:28px;text-align:center;color:var(--muted)}
+.final-rank.gold{color:var(--gold)}
+.final-score{font-size:15px;font-weight:900;color:var(--gold)}
+.final-bal{font-size:12px;color:var(--muted)}
+
+/* ── Connecting overlay ── */
+#conn-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center;padding:24px}
+#conn-overlay.show{display:flex}
+.conn-card{background:var(--sur);border-radius:20px;padding:28px;width:100%;max-width:340px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
+.spinner{width:34px;height:34px;border:3px solid var(--sur2);border-top-color:var(--gold);border-radius:50%;animation:sp .8s linear infinite}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--sur2);color:var(--text);padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;z-index:999;pointer-events:none;transition:transform .3s;white-space:nowrap;max-width:90vw;text-align:center}
+#toast.show{transform:translateX(-50%) translateY(0)}
+#toast.err{background:var(--red)}
+#toast.ok{background:var(--green);color:#001a0a}
+
+/* ── Catalog screen ── */
+.catalog-header{padding:24px 16px 12px;text-align:center}
+.catalog-countdown{font-size:48px;font-weight:900;color:var(--gold);line-height:1;margin:4px 0}
+.catalog-sub{font-size:13px;color:var(--muted);margin-top:2px}
+.catalog-item{display:flex;align-items:center;gap:12px;background:var(--sur);border-radius:var(--r);padding:13px;border:1px solid rgba(255,255,255,.06)}
+.catalog-num{font-size:12px;font-weight:800;color:var(--muted);width:20px;text-align:right;flex-shrink:0}
+.catalog-em{font-size:28px;flex-shrink:0}
+.catalog-info{flex:1;min-width:0}
+.catalog-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.catalog-desc{font-size:12px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.catalog-val{font-size:13px;font-weight:800;color:var(--gold);flex-shrink:0;white-space:nowrap}
+
+/* ── Misc ── */
+.pill{background:var(--sur2);border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:4px 12px;font-size:12px;color:var(--muted)}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--sur2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════ HOME -->
+<div id="screen-home" class="screen active">
+  <div class="logo-wrap">
+    <span class="logo-em">🔨</span>
+    <div class="logo-title">BIDDING GOD</div>
+    <div class="logo-sub">Outbid everyone. Own everything.</div>
+    <div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;background:rgba(123,47,212,.18);border:1px solid rgba(123,47,212,.35);border-radius:999px;padding:3px 12px;font-size:11px;color:var(--muted);letter-spacing:1px">
+      <span style="color:var(--purple);font-weight:700">v1.8</span>
+      <span>·</span>
+      <span>Blind Mode · Catalog · Auto-reconnect</span>
+    </div>
+  </div>
+  <div class="scroll col gap12" style="padding-bottom:32px">
+    <input id="home-name" type="text" maxlength="20" placeholder="Your name…" autocomplete="off">
+
+    <div id="home-btns" class="col gap8">
+      <button class="btn btn-gold" onclick="showCreate()">🏠 Create Room</button>
+      <button class="btn btn-purple" onclick="showJoin()">🔗 Join Room</button>
+    </div>
+
+    <div id="join-panel" class="col gap8" style="display:none">
+      <input id="join-code" class="code-input" type="text" maxlength="4" placeholder="ABCD" autocomplete="off">
+      <button class="btn btn-purple" onclick="doJoin()">Join Game →</button>
+      <button class="btn btn-ghost" onclick="hideJoin()">← Back</button>
+    </div>
+
+    <div id="create-panel" class="col gap8" style="display:none">
+      <div class="card-dark sm tc" style="padding:12px">10 rounds · 1,000 coins each · 30-sec timer · up to 20 players</div>
+      <button class="btn btn-gold" onclick="doCreate()">Create & Host →</button>
+      <button class="btn btn-ghost" onclick="hideCreate()">← Back</button>
+    </div>
+
+    <div class="card" style="gap:10px;font-size:13px;color:var(--muted)">
+      <div class="row sp"><span>🏆 Score</span><span>Total face-value of items you win</span></div>
+      <div class="row sp"><span>💰 Balance</span><span>1,000 coins · bid wisely</span></div>
+      <div class="row sp"><span>⏱️ Timer</span><span>30 sec · resets on each bid</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ LOBBY -->
+<div id="screen-lobby" class="screen">
+  <div class="top-bar">
+    <div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Room</div>
+      <div id="lob-code" style="font-size:22px;font-weight:900;letter-spacing:5px;color:var(--gold);font-family:monospace"></div>
+    </div>
+    <button class="btn btn-sm btn-outline" onclick="copyCode()">📋 Copy Code</button>
+  </div>
+  <div class="scroll col gap14">
+    <div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:7px">Players <span id="lob-cnt">0</span>/20</div>
+      <div class="player-list" id="lob-players"></div>
+    </div>
+    <div class="card tc sm">Share the code with friends · they open this same link and type the code</div>
+
+    <!-- Host-only settings -->
+    <div id="lob-settings" style="display:none" class="col gap8">
+      <div class="sm" style="text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Game Settings</div>
+      <div class="toggle-row">
+        <div>
+          <div style="font-weight:700;font-size:14px">🙈 Blind Auction Mode</div>
+          <div class="sm" style="margin-top:2px">Item values hidden during bidding · revealed after each round</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="blind-toggle">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div style="font-weight:700;font-size:14px">📋 Show Catalog</div>
+          <div class="sm" style="margin-top:2px">Players preview all auction items &amp; values before bidding starts</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="catalog-toggle">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+  <div style="padding:14px;gap:10px" class="col">
+    <button class="btn btn-gold" id="lob-start" onclick="hostStart()" style="display:none">⚡ Start Game</button>
+    <div id="lob-wait" class="tc sm" style="padding:8px">Waiting for host to start…</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ CATALOG -->
+<div id="screen-catalog" class="screen">
+  <div class="catalog-header">
+    <div style="font-size:13px;text-transform:uppercase;letter-spacing:2px;color:var(--muted)">Auction Catalog</div>
+    <div class="catalog-countdown" id="cat-timer">45</div>
+    <div class="catalog-sub" id="cat-sub">seconds until bidding starts</div>
+  </div>
+
+  <!-- Host-only skip button -->
+  <div id="cat-host-btn" style="display:none;padding:0 16px 10px">
+    <button class="btn btn-gold" onclick="catalogStartNow()">⚡ Start Auction Now →</button>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding:0 16px 24px">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+      <span id="cat-count">10</span> items up for auction · study them well
+    </div>
+    <div class="col gap8" id="cat-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ BIDDING -->
+<div id="screen-bidding" class="screen">
+  <div class="rbar"><div class="rbar-fill" id="bid-rbar"></div></div>
+  <div class="top-bar">
+    <div>
+      <div class="sm">Round <span id="bid-round">1</span>/<span id="bid-total">10</span></div>
+      <div id="bid-item-sm" style="font-size:13px;font-weight:700;margin-top:1px"></div>
+    </div>
+    <div class="row gap8" style="align-items:center">
+      <div style="font-size:14px;font-weight:700;color:var(--gold)">💰 <span id="bid-mycoins">1000</span></div>
+      <span id="conn-dot" title="Connection status" style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;flex-shrink:0;transition:background .4s"></span>
+    </div>
+  </div>
+
+  <div style="flex:1;overflow-y:auto;padding-bottom:8px">
+    <!-- Item -->
+    <div style="padding:12px 14px 0">
+      <div class="item-card">
+        <span class="item-em" id="bid-em">🏺</span>
+        <div class="item-name" id="bid-name">Item</div>
+        <div class="item-desc" id="bid-desc">Description</div>
+        <div class="item-val" id="bid-val-wrap">🏷️ Worth <span id="bid-val">0</span> coins</div>
+      </div>
+    </div>
+
+    <!-- Timer + bid display -->
+    <div style="padding:12px 14px 0">
+      <div class="timer-wrap">
+        <div class="timer-circle">
+          <svg viewBox="0 0 72 72" width="72" height="72">
+            <circle class="t-bg" cx="36" cy="36" r="30"/>
+            <circle class="t-fg" id="t-arc" cx="36" cy="36" r="30" stroke-dasharray="188.5" stroke-dashoffset="0"/>
+          </svg>
+          <span class="t-num" id="t-num">30</span>
+        </div>
+      </div>
+      <div class="bid-box">
+        <div class="bid-label">Current Bid</div>
+        <div class="bid-amount" id="bid-cur">0 <span style="font-size:15px;color:var(--muted)">coins</span></div>
+        <div class="bid-who" id="bid-who">No bids yet — be first!</div>
+      </div>
+
+      <!-- Quick bid buttons -->
+      <div class="bid-grid" id="bid-btns">
+        <button class="btn btn-purple" onclick="quickBid('min')">Min <span id="qmin">10</span></button>
+        <button class="btn btn-purple" onclick="quickBid(50)">+50 → <span id="q50">60</span></button>
+        <button class="btn btn-purple" onclick="quickBid(100)">+100 → <span id="q100">110</span></button>
+        <button class="btn btn-purple" onclick="quickBid('all')">All In 💥</button>
+      </div>
+
+      <!-- Custom bid -->
+      <div class="custom-row">
+        <input type="number" id="bid-custom" placeholder="Custom amount…" min="10" style="font-size:16px">
+        <button class="btn btn-gold btn-sm" onclick="doCustomBid()" style="white-space:nowrap;padding:0 14px">Bid!</button>
+      </div>
+
+      <!-- Pass -->
+      <button class="btn" id="pass-btn" onclick="doPass()" style="background:var(--sur2);color:var(--red);border:2px solid var(--red)">🚫 Pass</button>
+
+      <div id="top-msg" class="card tc" style="margin-top:8px;color:var(--gold);font-weight:700;display:none">👑 You're the top bidder — hold on…</div>
+      <div id="pass-msg" class="card tc" style="margin-top:8px;color:var(--muted);display:none">You passed. Watching this round…</div>
+    </div>
+
+    <!-- Bidder chips -->
+    <div class="chips" id="chips" style="margin-top:10px"></div>
+
+    <!-- Feed -->
+    <div class="feed">
+      <div class="feed-title">Activity</div>
+      <div class="feed-list" id="feed"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ ROUND END -->
+<div id="screen-round-end" class="screen">
+  <div class="win-wrap">
+    <div class="win-em" id="re-em">🎉</div>
+    <div class="win-lbl" id="re-lbl">WINNER</div>
+    <div class="win-name" id="re-name">—</div>
+    <div class="win-det" id="re-det"></div>
+    <div class="next-lbl" id="re-next"></div>
+  </div>
+  <div style="padding:0 14px 24px">
+    <div class="sm" style="margin-bottom:7px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Standings</div>
+    <div class="player-list" id="re-scores"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ GAME END -->
+<div id="screen-game-end" class="screen">
+  <div style="padding:24px 14px 0;text-align:center">
+    <div style="font-size:46px">🏆</div>
+    <h2 style="margin-top:6px">Final Results</h2>
+    <div class="sm" style="margin-top:3px">The auction is closed.</div>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:20px 14px 16px">
+    <div class="podium-wrap" id="podium"></div>
+    <div class="final-list" id="final-list"></div>
+  </div>
+  <div style="padding:14px;display:flex;flex-direction:column;gap:8px">
+    <button class="btn btn-gold" id="play-again-btn" onclick="playAgain()">🔄 Play Again</button>
+    <div id="play-again-wait" class="tc sm" style="display:none;padding:4px">Waiting for host to start a new game…</div>
+  </div>
+</div>
+
+<!-- Connecting overlay -->
+<div id="conn-overlay">
+  <div class="conn-card">
+    <div class="spinner"></div>
+    <div style="font-weight:700" id="conn-msg">Setting up room…</div>
+    <div class="sm" id="conn-sub">This takes just a moment</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════ ITEMS ═══════════════════
+const ITEMS=[
+  {id:1,name:'Ancient Roman Vase',value:380,emoji:'🏺',desc:'2,000-year-old terracotta masterpiece'},
+  {id:2,name:'Flawless Diamond Ring',value:580,emoji:'💍',desc:'5-carat flawless diamond, platinum band'},
+  {id:3,name:'Vintage Ferrari',value:820,emoji:'🏎️',desc:'1965 Ferrari 275 GTB in mint condition'},
+  {id:4,name:'Picasso Sketch',value:490,emoji:'🖼️',desc:'Authenticated original pencil sketch, 1932'},
+  {id:5,name:'Royal Gold Crown',value:440,emoji:'👑',desc:'18th century royal crown, solid 24k gold'},
+  {id:6,name:'Enchanted Sword',value:340,emoji:'⚔️',desc:'Legendary blade rumoured to be unbreakable'},
+  {id:7,name:'Private Island',value:750,emoji:'🏝️',desc:'3-acre private island in the Maldives'},
+  {id:8,name:'Martian Meteorite',value:260,emoji:'☄️',desc:'4-billion-year-old Martian rock fragment'},
+  {id:9,name:'1st Ed. Charizard',value:310,emoji:'🃏',desc:'PSA 10 holographic 1st edition Charizard'},
+  {id:10,name:'Dragon Egg',value:560,emoji:'🥚',desc:'Mythical artifact — glows in the dark'},
+  {id:11,name:'Luxury Superyacht',value:780,emoji:'⛵',desc:'80-foot superyacht, fully crewed, fueled'},
+  {id:12,name:'Enchanted Mirror',value:210,emoji:'🪞',desc:'Shows your future (results may vary)'},
+  {id:13,name:'Solid Gold Idol',value:370,emoji:'🗿',desc:'Solid 18k gold idol from an ancient temple'},
+  {id:14,name:'White Alba Truffle',value:160,emoji:'🍄',desc:"World's rarest truffle, 1.2kg specimen"},
+  {id:15,name:'Haunted Painting',value:230,emoji:'👁️',desc:'The eyes follow you — certified genuine'},
+  {id:16,name:'Time Machine Proto',value:910,emoji:'⏱️',desc:'Prototype — destination not guaranteed'},
+  {id:17,name:'Unicorn Horn',value:470,emoji:'🦄',desc:'Certified authentic, extremely rare'},
+  {id:18,name:"Philosopher's Stone",value:640,emoji:'💎',desc:'Turns lead to gold (allegedly)'},
+  {id:19,name:'Mermaid Pearl',value:290,emoji:'🦪',desc:'Iridescent pearl recovered from the deep'},
+  {id:20,name:'Ancient Spell Scroll',value:320,emoji:'📜',desc:'Contains a lost incantation of unknown power'},
+  {id:21,name:'Glowing Crystal Orb',value:195,emoji:'🔮',desc:'Emits a soft, mysterious azure light'},
+  {id:22,name:'Pirate Treasure Map',value:270,emoji:'🗺️',desc:'X marks the spot — treasure guaranteed'},
+  {id:23,name:"Merlin's Staff",value:415,emoji:'🪄',desc:'Carved from a lightning-struck oak, 500 AD'},
+  {id:24,name:'Woodstock Guitar',value:385,emoji:'🎸',desc:'Played live at Woodstock by a living legend'},
+  {id:25,name:'Viking Battle Helmet',value:240,emoji:'🪖',desc:'900 AD, worn in real battle — dents included'},
+  {id:26,name:'Golden Fleece',value:520,emoji:'🐑',desc:'Legendary artifact from Greek mythology'},
+  {id:27,name:"Thor's Hammer",value:720,emoji:'🔨',desc:"Mjölnir — only lifts for the worthy"},
+  {id:28,name:"Pandora's Box",value:180,emoji:'📦',desc:'Sealed tight — do NOT open'},
+  {id:29,name:"Poseidon's Trident",value:660,emoji:'🔱',desc:'Commands the seas — certified genuine'},
+  {id:30,name:"Cleopatra's Necklace",value:430,emoji:'📿',desc:'18k gold and rubies, circa 50 BC'},
+  {id:31,name:'Moon Rock Sample',value:350,emoji:'🌕',desc:'Apollo 11 certified lunar fragment'},
+  {id:32,name:'Alien Artifact',value:590,emoji:'👽',desc:'Origin: unknown. Material: also unknown.'},
+  {id:33,name:'Stradivarius Violin',value:870,emoji:'🎻',desc:'1715, perfect condition, never played'},
+  {id:34,name:'Shakespeare First Folio',value:750,emoji:'📖',desc:'Original 1623 print, flawless binding'},
+  {id:35,name:'T-Rex Skull',value:680,emoji:'🦴',desc:'Complete Tyrannosaurus skull, museum quality'},
+  {id:36,name:'Fountain of Youth Water',value:440,emoji:'💧',desc:'One vial — effects not guaranteed'},
+  {id:37,name:"Genie's Lamp",value:810,emoji:'🪔',desc:'Three wishes — one careful owner'},
+  {id:38,name:'Rainbow Diamond',value:920,emoji:'💎',desc:'12-carat, unique prismatic cut — one of a kind'},
+  {id:39,name:'Neptunian Crystal',value:340,emoji:'🔵',desc:'Deep-sea mineral, naturally bioluminescent'},
+  {id:40,name:'Antarctic Ice Core',value:170,emoji:'🧊',desc:'800,000-year-old trapped air sample'},
+  {id:41,name:'Saber-tooth Tiger Claw',value:200,emoji:'🐾',desc:'Perfectly preserved specimen, 10,000 BC'},
+  {id:42,name:'Flying Carpet',value:460,emoji:'🪂',desc:'Tested to 500 km/h — no seatbelts included'},
+  {id:43,name:'Einstein Chalkboard',value:670,emoji:'📐',desc:"E=mc² scrawled in Einstein's own hand"},
+  {id:44,name:'Marie Curie Lab Notes',value:580,emoji:'📓',desc:'Slightly radioactive — gloves are included'},
+  {id:45,name:'First Bitcoin Wallet',value:840,emoji:'💾',desc:'Contains 50 BTC from genesis block, 2009'},
+  {id:46,name:'Yeti Fur Sample',value:220,emoji:'🦶',desc:'DNA-verified, extraordinary origin'},
+  {id:47,name:'Atlantis Map',value:610,emoji:'🗺️',desc:'Carved in orichalcum, pre-flood era'},
+  {id:48,name:'Phoenix Feather',value:480,emoji:'🪶',desc:'Warm to the touch — always'},
+  {id:49,name:'Kraken Ink Vial',value:310,emoji:'🦑',desc:'Used in ancient deep-sea cartography'},
+  {id:50,name:'Black Lotus Card',value:740,emoji:'🌸',desc:'MTG Alpha 1993 — BGS 10 graded'},
+  {id:51,name:'Fabergé Egg',value:690,emoji:'🥚',desc:'Imperial Russian — solid gold interior'},
+  {id:52,name:'Moonstone Tiara',value:370,emoji:'👸',desc:'Worn by a real princess, verified heritage'},
+  {id:53,name:'Dragon Scale Shield',value:550,emoji:'🛡️',desc:'Heat-resistant to 2,000°C — battle-tested'},
+  {id:54,name:'Holographic Booster Pack',value:290,emoji:'🃏',desc:"1999 Pokémon factory sealed — unopened"},
+  {id:55,name:"World's Largest Pearl",value:430,emoji:'🦪',desc:'34 kg, recovered from the Philippines'},
+  {id:56,name:'Anti-gravity Boots',value:760,emoji:'👟',desc:'Prototype — 3-inch hover confirmed'},
+  {id:57,name:'Singing Sword',value:310,emoji:'🎵',desc:'Hums old folk songs in the wind'},
+  {id:58,name:'Sea Serpent Scale',value:265,emoji:'🐉',desc:'Recovered off the Norwegian coast'},
+  {id:59,name:'Dodo Bird Egg',value:580,emoji:'🪺',desc:'Last known intact specimen — handle with care'},
+  {id:60,name:'Rosetta Stone Chip',value:430,emoji:'🪨',desc:'Official fragment, museum deaccessioned'},
+  {id:61,name:'Excalibur',value:900,emoji:'⚔️',desc:'Pulled from a lake in Wales — authenticated'},
+  {id:62,name:'Golden Apple of Discord',value:610,emoji:'🍎',desc:'Inscribed "For the Fairest" — unopened'},
+  {id:63,name:"Pegasus Feather",value:520,emoji:'🕊️',desc:'Confirmed aerodynamic lift properties'},
+  {id:64,name:'Roman Vintage Wine',value:480,emoji:'🍷',desc:'325 AD amphora — still corked, still fragrant'},
+  {id:65,name:'Living Coelacanth',value:360,emoji:'🐟',desc:'Living fossil — 400 million year lineage'},
+  {id:66,name:'Space-formed Diamond',value:830,emoji:'💎',desc:'6-carat diamond crystallised in deep space'},
+  {id:67,name:"Da Vinci's Notebook",value:710,emoji:'📔',desc:'12 unpublished inventions, ink still fresh'},
+  {id:68,name:'Crystal Skull',value:540,emoji:'💀',desc:'Mayan hand-carved quartz — pre-Columbian'},
+  {id:69,name:'Tibetan Singing Bowl',value:220,emoji:'🔔',desc:'500-year-old bronze — resonance is haunting'},
+  {id:70,name:'Narwhal Tusk',value:330,emoji:'🦄',desc:'Ethically sourced, three metres long'},
+  {id:71,name:'Black Diamond Tiara',value:760,emoji:'💍',desc:'34 black diamonds set in platinum, 1920s'},
+  {id:72,name:'Teleportation Device',value:950,emoji:'📡',desc:'Prototype — destination unreliable'},
+  {id:73,name:'Thunderbird Egg',value:445,emoji:'⚡',desc:'Crackles audibly during storms'},
+  {id:74,name:'Nessie Photograph',value:195,emoji:'📷',desc:'The original 1934 negative — frame & all'},
+  {id:75,name:'Giant Squid Eye',value:250,emoji:'👁️',desc:'Dinner-plate-sized, preserved in brine'},
+  {id:76,name:"Medusa's Mirror",value:380,emoji:'🪞',desc:'She could not look away either'},
+  {id:77,name:'Spanish Galleon Coin',value:165,emoji:'🪙',desc:'1715 Fleet treasure — certified real gold'},
+  {id:78,name:'Map to El Dorado',value:570,emoji:'🗺️',desc:'Different from the pirate map — this one works'},
+  {id:79,name:'Tesla Coil Original',value:640,emoji:'⚡',desc:"Nikola Tesla's prototype, 1899 — still sparks"},
+  {id:80,name:"World's Rarest Stamp",value:720,emoji:'📮',desc:'British Guiana 1c Magenta, 1856'},
+  {id:81,name:'Talking Parrot',value:430,emoji:'🦜',desc:'Knows things it absolutely should not know'},
+  {id:82,name:'The Holy Grail',value:990,emoji:'🏆',desc:'Allegedly. Glows faintly. Handle with faith.'},
+  {id:83,name:'Vampire Cape',value:270,emoji:'🧛',desc:'Smells of old castles — owner unknown'},
+  {id:84,name:"Witch's Cauldron",value:315,emoji:'🪄',desc:'Still bubbling — contents: classified'},
+  {id:85,name:'Cursed Monkey Paw',value:225,emoji:'🐒',desc:'Three wishes. All outcomes ironic.'},
+  {id:86,name:"Philosopher's Compass",value:480,emoji:'🧭',desc:'Always points toward the truth'},
+  {id:87,name:'Dinosaur Amber Mosquito',value:390,emoji:'🦟',desc:'Intact DNA — Jurassic Park potential'},
+  {id:88,name:'Haunted Music Box',value:245,emoji:'🎶',desc:'Plays itself at 3am — no key required'},
+  {id:89,name:'Crystal Cave Stalagmite',value:195,emoji:'💎',desc:'100,000-year formation — perfect geometry'},
+  {id:90,name:'Leprechaun Gold Coin',value:240,emoji:'🍀',desc:'Found at the end of a verified rainbow'},
+  {id:91,name:'Cloud in a Jar',value:145,emoji:'☁️',desc:'Real cumulus cloud, sealed in borosilicate glass'},
+  {id:92,name:'Snowflake in Amber',value:300,emoji:'❄️',desc:'Preserved winter moment — 10,000 BC'},
+  {id:93,name:'Cursed Ruby Goblet',value:410,emoji:'🍷',desc:'Every drink tastes different — never twice'},
+  {id:94,name:'Oracle Dice Set',value:350,emoji:'🎲',desc:'Always roll exactly what you need'},
+  {id:95,name:'Philosopher Hat',value:190,emoji:'🎩',desc:'Belonged to Socrates — allegedly increases IQ'},
+  {id:96,name:'Bermuda Triangle Compass',value:275,emoji:'🧭',desc:'Always points somewhere interesting'},
+  {id:97,name:"Kraken Tentacle",value:395,emoji:'🦑',desc:'4-metre preserved specimen — museum grade'},
+  {id:98,name:'Midas Touch Glove',value:870,emoji:'🧤',desc:'Left hand only — use with extreme caution'},
+  {id:99,name:"World's Smallest Violin",value:160,emoji:'🎻',desc:'For when you need to feel deeply understood'},
+  {id:100,name:'Immortality Elixir',value:980,emoji:'✨',desc:'One dose — expiry date: never'},
+];
+
+// ═══════════════════ STATE ═══════════════════
+const PEER_PREFIX='biddingod-';
+const TOTAL_ROUNDS=10;
+const TIMER_SEC=30;
+const START_BALANCE=1000;
+const MIN_INC=10;
+const CIRC=2*Math.PI*30; // 188.5
+
+const VERSION='1.8';
+
+// PeerJS ICE config — multiple STUN servers for better production NAT traversal
+const PEER_CONFIG={
+  debug:0,
+  config:{
+    iceServers:[
+      {urls:'stun:stun.l.google.com:19302'},
+      {urls:'stun:stun1.l.google.com:19302'},
+      {urls:'stun:stun2.l.google.com:19302'},
+      {urls:'stun:stun3.l.google.com:19302'},
+      {urls:'stun:stun4.l.google.com:19302'},
+    ],
+  },
+};
+
+let peer=null;
+let myId='';
+let myName='';
+let isHost=false;
+let roomCode='';
+let hostConn=null;      // guests: connection to host
+let clients={};         // host: {peerId:{conn,name}} - excludes host
+let timerHandle=null;
+
+// Guest reconnect state
+let _reconnectTimer=null;
+let _reconnectCount=0;
+let _gameHasStarted=false;
+
+// Authoritative game state (host only, fully managed here)
+let G={
+  players:[],           // [{id,name,balance,score,items:[],passed}]
+  state:'lobby',
+  currentRound:0,
+  totalRounds:TOTAL_ROUNDS,
+  roundItems:[],
+  currentItem:null,
+  currentBid:0,
+  currentBidder:null,   // peerId string or null
+  timeLeft:TIMER_SEC,
+  blindMode:false,      // hide item values during bidding
+  catalogMode:false,    // show item catalog before round 1
+};
+
+// Local display state
+let myBalance=START_BALANCE;
+let myPassed=false;
+let amTop=false;
+let feedLines=[];
+let blindMode=false;    // local copy for rendering
+let catalogMode=false;
+let catalogTimer=null;  // setInterval handle for catalog countdown
+
+// ═══════════════════ SCREEN NAV ═══════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  window.scrollTo(0,0);
+}
+function showOverlay(msg,sub){
+  document.getElementById('conn-msg').textContent=msg;
+  document.getElementById('conn-sub').textContent=sub||'';
+  document.getElementById('conn-overlay').classList.add('show');
+}
+function hideOverlay(){document.getElementById('conn-overlay').classList.remove('show');}
+
+// ═══════════════════ HOME ═══════════════════
+function showCreate(){
+  if(!checkName())return;
+  document.getElementById('home-btns').style.display='none';
+  document.getElementById('create-panel').style.display='flex';
+}
+function hideCreate(){
+  document.getElementById('home-btns').style.display='flex';
+  document.getElementById('create-panel').style.display='none';
+}
+function showJoin(){
+  if(!checkName())return;
+  document.getElementById('home-btns').style.display='none';
+  document.getElementById('join-panel').style.display='flex';
+  document.getElementById('join-code').focus();
+}
+function hideJoin(){
+  document.getElementById('home-btns').style.display='flex';
+  document.getElementById('join-panel').style.display='none';
+}
+function checkName(){
+  myName=document.getElementById('home-name').value.trim().slice(0,20);
+  if(!myName){toast('Enter your name first!','err');return false;}
+  return true;
+}
+
+document.getElementById('join-code').addEventListener('input',function(){
+  this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+});
+document.getElementById('home-name').addEventListener('keydown',e=>{if(e.key==='Enter')showJoin();});
+document.getElementById('join-code').addEventListener('keydown',e=>{if(e.key==='Enter')doJoin();});
+document.getElementById('bid-custom').addEventListener('keydown',e=>{if(e.key==='Enter')doCustomBid();});
+
+// ═══════════════════ HOST: CREATE ═══════════════════
+function doCreate(){
+  if(!checkName())return;
+  const code=mkCode();
+  showOverlay('Creating room…','Setting up your P2P connection');
+  peer=new Peer(PEER_PREFIX+code,PEER_CONFIG);
+  peer.on('open',id=>{
+    myId=id;
+    roomCode=code;
+    isHost=true;
+    G.players=[{id:myId,name:myName,balance:START_BALANCE,score:0,items:[],passed:false}];
+    G.state='lobby';
+    // Accept incoming connections
+    peer.on('connection',conn=>{
+      conn.on('open',()=>{
+        conn.on('data',msg=>hostHandleMsg(conn,msg));
+        conn.on('close',()=>hostHandleDisconnect(conn.peer));
+        conn.on('error',()=>hostHandleDisconnect(conn.peer));
+      });
+    });
+    hideOverlay();
+    showLobby();
+  });
+  peer.on('error',e=>{
+    hideOverlay();
+    if(e.type==='unavailable-id'){setTimeout(doCreate,400);}
+    else{toast('Connection error: '+e.type,'err');}
+  });
+}
+
+// ═══════════════════ GUEST: JOIN ═══════════════════
+function doJoin(){
+  if(!checkName())return;
+  const code=document.getElementById('join-code').value.trim();
+  if(code.length!==4){toast('Enter a 4-letter room code','err');return;}
+  showOverlay('Joining room '+code+'…','Connecting to host');
+  // Stable suffix — reused on reconnect so host can identify us by the same peer ID
+  const guestId=PEER_PREFIX+'g-'+Math.random().toString(36).slice(2,8);
+  peer=new Peer(guestId,PEER_CONFIG);
+  peer.on('open',id=>{
+    myId=id;roomCode=code;isHost=false;
+    _reconnectCount=0;_gameHasStarted=false;
+    connectToHost(true);
+  });
+  peer.on('error',e=>{
+    if(e.type==='peer-unavailable'){hideOverlay();toast('Room not found. Check the code.','err');}
+    else{hideOverlay();toast('Connection error: '+e.type,'err');}
+  });
+}
+
+function connectToHost(firstTime){
+  if(!peer||!roomCode)return;
+  hostConn=peer.connect(PEER_PREFIX+roomCode,{reliable:true,serialization:'json'});
+  updateConnStatus(false);
+  hostConn.on('open',()=>{
+    clearTimeout(_reconnectTimer);
+    _reconnectCount=0;
+    updateConnStatus(true);
+    hideOverlay();
+    // If game already started we send reconnect instead of hello
+    if(!_gameHasStarted){
+      hostConn.send({type:'hello',name:myName,id:myId});
+      // Show a waiting-room lobby immediately so the player knows they've connected,
+      // before the host broadcasts lobby_state
+      showJoinWaiting();
+    } else {
+      hostConn.send({type:'reconnect',name:myName,id:myId});
+    }
+  });
+  hostConn.on('data',msg=>guestHandleMsg(msg));
+  hostConn.on('error',()=>{
+    updateConnStatus(false);
+    if(firstTime&&!_gameHasStarted){hideOverlay();toast('Cannot connect. Check the code.','err');}
+    else scheduleReconnect();
+  });
+  hostConn.on('close',()=>{
+    updateConnStatus(false);
+    scheduleReconnect();
+  });
+}
+
+function scheduleReconnect(){
+  if(!roomCode||isHost)return;
+  if(_reconnectCount>=6){toast('Connection lost — please rejoin.','err');return;}
+  _reconnectCount++;
+  const delay=Math.min(800*_reconnectCount,4000);
+  clearTimeout(_reconnectTimer);
+  toast('Reconnecting…','');
+  _reconnectTimer=setTimeout(()=>connectToHost(false),delay);
+}
+
+// ═══════════════════ HOST: MESSAGE HANDLER ═══════════════════
+function hostHandleMsg(conn,msg){
+  switch(msg.type){
+    case 'hello':{
+      if(G.state!=='lobby'){conn.send({type:'err',message:'Game already started.'});conn.close();return;}
+      if(G.players.length>=20){conn.send({type:'err',message:'Room is full.'});conn.close();return;}
+      const nameTaken=G.players.some(p=>p.name.toLowerCase()===msg.name.toLowerCase());
+      if(nameTaken){conn.send({type:'err',message:'Name already taken.'});conn.close();return;}
+      clients[conn.peer]={conn,name:msg.name};
+      G.players.push({id:conn.peer,name:msg.name,balance:START_BALANCE,score:0,items:[],passed:false});
+      broadcastAll({type:'lobby_state',players:snapshot(),roomCode});
+      break;
+    }
+    case 'bid':{
+      if(G.state!=='bidding')return;
+      hostProcessBid(conn.peer,msg.amount);
+      break;
+    }
+    case 'pass':{
+      if(G.state!=='bidding')return;
+      hostProcessPass(conn.peer);
+      break;
+    }
+    case 'want_replay':{
+      // Relay to handleEvent so host's UI can show the toast
+      handleEvent({type:'want_replay',peerId:conn.peer});
+      break;
+    }
+    case 'reconnect':{
+      // Guest reconnecting mid-game — restore their connection
+      let player=G.players.find(p=>p.name===msg.name||p.id===conn.peer);
+      if(player){
+        player.id=conn.peer;
+        clients[conn.peer]={conn,name:msg.name};
+      } else if(G.state!=='lobby'){
+        // Re-add with zeroed-out state (they'll catch up via round_start)
+        player={id:conn.peer,name:msg.name,balance:0,score:0,items:[],passed:true};
+        G.players.push(player);
+        clients[conn.peer]={conn,name:msg.name};
+      }
+      if(G.state==='bidding'){
+        conn.send({type:'round_start',state:roundState()});
+      } else if(G.state==='lobby'){
+        conn.send({type:'lobby_state',players:snapshot(),roomCode});
+      } else if(G.state==='gameEnd'){
+        const finalScores=G.players.map(p=>({id:p.id,name:p.name,score:p.score,balance:p.balance,itemCount:p.items.length,items:p.items})).sort((a,b)=>b.score-a.score||b.balance-a.balance);
+        conn.send({type:'game_end',finalScores});
+      }
+      break;
+    }
+  }
+}
+
+function hostHandleDisconnect(peerId){
+  if(!clients[peerId])return;
+  // Cancel bid if they were top bidder
+  if(G.currentBidder===peerId){G.currentBid=0;G.currentBidder=null;}
+  delete clients[peerId];
+  if(G.state==='lobby'){
+    // In lobby: fully remove the player
+    G.players=G.players.filter(p=>p.id!==peerId);
+    broadcastAll({type:'lobby_state',players:snapshot(),roomCode});
+  } else {
+    // Mid-game: keep player in list so they can reconnect; auto-pass them so game continues
+    const p=G.players.find(q=>q.id===peerId);
+    if(p&&!p.passed)p.passed=true;
+    broadcastAll({type:'player_left',peerId});
+    // If only host left online, end game
+    const onlineCount=G.players.filter(q=>q.id===myId||clients[q.id]).length;
+    if(onlineCount<2&&G.state==='bidding'){clearTimeout(timerHandle);hostEndGame();}
+  }
+}
+
+// ═══════════════════ HOST: GAME FLOW ═══════════════════
+const CATALOG_SECONDS=45;
+
+function hostStart(){
+  if(G.players.length<2){toast('Need at least 2 players!','err');return;}
+  const shuffled=[...ITEMS].sort(()=>Math.random()-.5);
+  // Randomise each item's value ±40% from its base, rounded to nearest 5
+  G.roundItems=shuffled.slice(0,G.totalRounds).map(item=>{
+    const multiplier=0.6+Math.random()*0.8; // 0.60× to 1.40× base value
+    const randVal=Math.round(item.value*multiplier/5)*5;
+    return{...item,value:Math.max(50,randVal)}; // floor at 50 coins
+  });
+  G.currentRound=0;
+  G.blindMode=document.getElementById('blind-toggle').checked;
+  G.catalogMode=document.getElementById('catalog-toggle').checked;
+  G.players.forEach(p=>{p.balance=START_BALANCE;p.score=0;p.items=[];p.passed=false;});
+  broadcastAll({
+    type:'game_starting',
+    blindMode:G.blindMode,
+    catalogMode:G.catalogMode,
+    items:G.roundItems,           // auction order — players can study what's coming
+    catalogSeconds:CATALOG_SECONDS,
+  });
+  if(!G.catalogMode){
+    setTimeout(()=>hostStartRound(),1400);
+  }
+  // If catalogMode: hostStartRound() is triggered by catalogStartNow() or the countdown
+}
+
+function hostStartRound(){
+  G.currentRound++;
+  if(G.currentRound>G.totalRounds){hostEndGame();return;}
+  // If every player is out of usable coins, end the game early
+  if(G.players.every(p=>p.balance<MIN_INC)){hostEndGame();return;}
+  G.players.forEach(p=>p.passed=false);
+  G.currentItem=G.roundItems[G.currentRound-1];
+  G.currentBid=0;
+  G.currentBidder=null;
+  G.timeLeft=TIMER_SEC;
+  G.state='bidding';
+  // Silent auto-pass players who can't afford even the opening bid
+  G.players.forEach(p=>{
+    if(p.balance<MIN_INC){p.passed=true;}
+  });
+  broadcastAll({type:'round_start',state:roundState()});
+  // Notify silently for auto-passed players (after state is sent so chips render correctly)
+  G.players.filter(p=>p.passed).forEach(p=>{
+    broadcastAll({type:'player_passed',peerId:p.id,playerName:p.name,players:snapshot(),silent:true});
+  });
+  // Check if all are already passed at round start (edge case)
+  const active=G.players.filter(p=>!p.passed);
+  if(active.length===0){setTimeout(()=>hostEndRound(),500);return;}
+  hostTickTimer();
+}
+
+function hostTickTimer(){
+  timerHandle=setTimeout(()=>{
+    if(G.state!=='bidding')return;
+    G.timeLeft--;
+    broadcastAll({type:'timer_tick',timeLeft:G.timeLeft});
+    if(G.timeLeft<=0){hostEndRound();return;}
+    // Auto-end if only winner remains
+    const active=G.players.filter(p=>!p.passed);
+    if(active.length===0||(active.length===1&&G.currentBidder&&active[0].id===G.currentBidder)){
+      if(G.currentBidder)hostEndRound();
+      return;
+    }
+    if(active.length===0&&!G.currentBidder){hostEndRound();return;}
+    hostTickTimer();
+  },1000);
+}
+
+function hostProcessBid(peerId,amount){
+  if(peerId===G.currentBidder)return; // already top bidder
+  const player=G.players.find(p=>p.id===peerId);
+  if(!player||player.passed)return;
+  const bid=parseInt(amount,10);
+  const minBid=Math.max(G.currentBid+MIN_INC,MIN_INC);
+  if(isNaN(bid)||bid<minBid){sendTo(peerId,{type:'bid_err',message:`Min bid is ${minBid} coins`});return;}
+  if(bid>player.balance){sendTo(peerId,{type:'bid_err',message:"Not enough coins!"});return;}
+  G.currentBid=bid;
+  G.currentBidder=peerId;
+  G.timeLeft=TIMER_SEC; // reset timer
+  // Track who was passed before this bid so we can find newly auto-passed players
+  const wasPassedBefore=new Set(G.players.filter(p=>p.passed).map(p=>p.id));
+  // Silent auto-pass anyone who can no longer afford the next minimum bid
+  const nextMin=G.currentBid+MIN_INC;
+  G.players.forEach(p=>{
+    if(p.passed||p.id===G.currentBidder)return;
+    if(p.balance<nextMin)p.passed=true;
+  });
+  broadcastAll({type:'bid_update',bidderId:peerId,bidderName:player.name,amount:bid,timeLeft:TIMER_SEC,players:snapshot()});
+  // Silently notify each newly auto-passed player so their UI updates correctly
+  G.players.filter(p=>p.passed&&!wasPassedBefore.has(p.id)&&p.id!==G.currentBidder)
+    .forEach(p=>broadcastAll({type:'player_passed',peerId:p.id,playerName:p.name,players:snapshot(),silent:true}));
+  // Check if round should end immediately (everyone except winner passed)
+  const active=G.players.filter(p=>!p.passed);
+  if(active.length===0||(active.length===1&&active[0].id===G.currentBidder)){
+    clearTimeout(timerHandle);
+    setTimeout(()=>hostEndRound(),400);
+  }
+}
+
+function hostProcessPass(peerId){
+  if(peerId===G.currentBidder)return; // top bidder can't pass
+  const player=G.players.find(p=>p.id===peerId);
+  if(!player||player.passed)return;
+  player.passed=true;
+  broadcastAll({type:'player_passed',peerId,playerName:player.name,players:snapshot()});
+  // Check if only winner remains
+  const active=G.players.filter(p=>!p.passed);
+  if(active.length===0||(active.length===1&&G.currentBidder&&active[0].id===G.currentBidder)){
+    clearTimeout(timerHandle);
+    if(G.currentBidder)setTimeout(()=>hostEndRound(),300);
+    else hostEndRound();
+    return;
+  }
+}
+
+function hostEndRound(){
+  if(G.state!=='bidding')return;
+  clearTimeout(timerHandle);
+  G.state='roundEnd';
+  let winner=null;
+  if(G.currentBidder){
+    winner=G.players.find(p=>p.id===G.currentBidder);
+    if(winner){
+      winner.balance-=G.currentBid;
+      winner.score+=G.currentItem.value;
+      winner.items.push({...G.currentItem,paidAmount:G.currentBid});
+    }
+  }
+  broadcastAll({
+    type:'round_end',
+    winner:winner?{id:winner.id,name:winner.name}:null,
+    item:G.currentItem,
+    bidAmount:G.currentBid,
+    players:snapshot(),
+    currentRound:G.currentRound,
+    totalRounds:G.totalRounds,
+  });
+  setTimeout(()=>{if(G.players.length>=2)hostStartRound();},4500);
+}
+
+function hostEndGame(){
+  G.state='gameEnd';
+  const finalScores=G.players
+    .map(p=>({id:p.id,name:p.name,score:p.score,balance:p.balance,itemCount:p.items.length,items:p.items}))
+    .sort((a,b)=>b.score-a.score||b.balance-a.balance);
+  broadcastAll({type:'game_end',finalScores});
+}
+
+// ═══════════════════ HOST: SEND / BROADCAST ═══════════════════
+function broadcastAll(msg){
+  // Send to all guests
+  Object.values(clients).forEach(c=>{if(c.conn&&c.conn.open)c.conn.send(msg);});
+  // Handle locally (host processes too)
+  handleEvent(msg);
+}
+
+function sendTo(peerId,msg){
+  if(clients[peerId]&&clients[peerId].conn.open)clients[peerId].conn.send(msg);
+}
+
+// ═══════════════════ GUEST: EVENT HANDLER ═══════════════════
+function guestHandleMsg(msg){handleEvent(msg);}
+
+// ═══════════════════ SHARED EVENT HANDLER ═══════════════════
+function handleEvent(msg){
+  switch(msg.type){
+    case 'err': toast(msg.message,'err'); break;
+    case 'bid_err': toast(msg.message,'err'); break;
+    case 'lobby_state': renderLobby(msg.players,msg.roomCode); break;
+    case 'game_starting':
+      _gameHasStarted=true;
+      feedLines=[];
+      blindMode=msg.blindMode||false;
+      catalogMode=msg.catalogMode||false;
+      if(catalogMode){
+        showCatalogScreen(msg.items||[],msg.catalogSeconds||CATALOG_SECONDS);
+      } else {
+        showOverlay(blindMode?'🙈 Blind Auction Starting!':'⚡ Game Starting!',
+          blindMode?'Item values are hidden — bid on instinct!':'Get ready — '+TOTAL_ROUNDS+' rounds!');
+        setTimeout(hideOverlay,1600);
+      }
+      break;
+    case 'round_start':{
+      _gameHasStarted=true;
+      feedLines=[];
+      myPassed=false;
+      amTop=false;
+      const s=msg.state;
+      blindMode=s.blindMode||false;
+      const me=s.players.find(p=>p.id===myId);
+      if(me)myBalance=me.balance;
+      renderBidding(s);
+      showScreen('bidding');
+      break;
+    }
+    case 'timer_tick': setTimer(msg.timeLeft); break;
+    case 'bid_update':{
+      amTop=msg.bidderId===myId;
+      updateBidDisplay(msg.amount,msg.bidderId,msg.bidderName);
+      setTimer(msg.timeLeft);
+      updateBidButtons(msg.amount);
+      renderChips(msg.players);
+      addFeed(`<span class="name">${esc(msg.bidderName)}</span> bid <span class="coins">${msg.amount} coins</span>`);
+      break;
+    }
+    case 'player_passed':{
+      if(msg.peerId===myId){myPassed=true;updateBidButtons();}
+      renderChips(msg.players);
+      if(!msg.silent)addFeed(`<span class="name">${esc(msg.playerName)}</span> passed`);
+      break;
+    }
+    case 'player_left': toast('A player left',''); break;
+    case 'round_end': renderRoundEnd(msg); break;
+    case 'game_end': renderGameEnd(msg.finalScores); break;
+    case 'reset_lobby':{
+      // Reset all local state but keep connections alive
+      _gameHasStarted=false;
+      clearInterval(catalogTimer);
+      clearTimeout(timerHandle);
+      myBalance=START_BALANCE;
+      myPassed=false;
+      amTop=false;
+      feedLines=[];
+      blindMode=false;
+      catalogMode=false;
+      _curBid=0;_curBidder=null;
+      renderLobby(msg.players,roomCode);
+      showScreen('lobby');
+      break;
+    }
+    case 'want_replay':{
+      // Guest wants to play again — show notification on host's game-end screen
+      if(isHost){
+        const p=G.players.find(q=>q.id===msg.peerId);
+        if(p)toast(p.name+' wants to play again!','');
+      }
+      break;
+    }
+  }
+}
+
+// ═══════════════════ GUEST / HOST: GAME ACTIONS ═══════════════════
+function quickBid(type){
+  const minBid=Math.max(getCurrentBidForUI()+MIN_INC,MIN_INC);
+  let amount;
+  if(type==='min')amount=minBid;
+  else if(type==='all')amount=myBalance;
+  else amount=Math.max(getCurrentBidForUI()+type,minBid);
+  if(amount>myBalance){toast('Not enough coins!','err');return;}
+  sendBid(amount);
+}
+function doCustomBid(){
+  const v=parseInt(document.getElementById('bid-custom').value,10);
+  if(isNaN(v)){toast('Enter a valid amount','err');return;}
+  if(v>myBalance){toast('Not enough coins!','err');return;}
+  document.getElementById('bid-custom').value='';
+  sendBid(v);
+}
+function doPass(){
+  if(isHost)hostProcessPass(myId);
+  else sendToHost({type:'pass'});
+}
+function sendBid(amount){
+  if(isHost)hostProcessBid(myId,amount);
+  else sendToHost({type:'bid',amount});
+}
+function sendToHost(msg){
+  if(hostConn&&hostConn.open){
+    hostConn.send(msg);
+  } else {
+    toast('Reconnecting… please try again in a moment','err');
+    scheduleReconnect();
+  }
+}
+
+function updateConnStatus(ok){
+  const dot=document.getElementById('conn-dot');
+  if(dot)dot.style.background=ok?'var(--green)':'var(--red)';
+}
+
+// Track current bid for UI (updated on bid_update events)
+let _curBid=0,_curBidder=null;
+function getCurrentBidForUI(){return _curBid;}
+
+// ═══════════════════ UI: CATALOG ═══════════════════
+function showCatalogScreen(items,seconds){
+  clearInterval(catalogTimer);
+  document.getElementById('cat-count').textContent=items.length;
+  // Show / hide host-only start button
+  document.getElementById('cat-host-btn').style.display=isHost?'block':'none';
+
+  // Build item list in auction order
+  document.getElementById('cat-list').innerHTML=items.map((item,i)=>`
+    <div class="catalog-item">
+      <span class="catalog-num">${i+1}</span>
+      <span class="catalog-em">${item.emoji}</span>
+      <div class="catalog-info">
+        <div class="catalog-name">${esc(item.name)}</div>
+        <div class="catalog-desc">${item.desc}</div>
+      </div>
+      <div class="catalog-val">🏷️ ${item.value}</div>
+    </div>`).join('');
+
+  // Countdown
+  let remaining=seconds;
+  const numEl=document.getElementById('cat-timer');
+  const subEl=document.getElementById('cat-sub');
+  function tick(){
+    numEl.textContent=remaining;
+    numEl.style.color=remaining<=10?'var(--red)':remaining<=20?'#ff9500':'var(--gold)';
+    subEl.textContent=remaining===1?'second until bidding starts':'seconds until bidding starts';
+    if(remaining<=0){
+      clearInterval(catalogTimer);
+      if(isHost)hostStartRound(); // host triggers the round for everyone
+      return;
+    }
+    remaining--;
+  }
+  tick();
+  catalogTimer=setInterval(tick,1000);
+  showScreen('catalog');
+}
+
+function catalogStartNow(){
+  if(!isHost)return;
+  clearInterval(catalogTimer);
+  hostStartRound();
+}
+
+function playAgain(){
+  if(isHost){
+    // Reset game state — keep same players & connections
+    clearTimeout(timerHandle);
+    G.state='lobby';
+    G.currentRound=0;
+    G.roundItems=[];
+    G.currentItem=null;
+    G.currentBid=0;
+    G.currentBidder=null;
+    G.timeLeft=TIMER_SEC;
+    G.blindMode=false;
+    G.catalogMode=false;
+    G.players.forEach(p=>{p.balance=START_BALANCE;p.score=0;p.items=[];p.passed=false;});
+    broadcastAll({type:'reset_lobby',players:snapshot()});
+  } else {
+    // Guest: signal host and show waiting message
+    sendToHost({type:'want_replay',peerId:myId});
+    document.getElementById('play-again-btn').disabled=true;
+    document.getElementById('play-again-btn').textContent='✓ Ready to play again';
+    document.getElementById('play-again-wait').style.display='block';
+  }
+}
+
+// ═══════════════════ UI: LOBBY ═══════════════════
+
+// Called immediately after guest connects — shows a skeleton lobby so the
+// player knows they've joined before the host's lobby_state arrives
+function showJoinWaiting(){
+  document.getElementById('lob-code').textContent=roomCode;
+  document.getElementById('lob-cnt').textContent='…';
+  document.getElementById('lob-players').innerHTML=`
+    <div class="player-row">
+      <div class="avatar" style="background:${acolor(myName)}">${myName[0].toUpperCase()}</div>
+      <div class="fill" style="font-weight:600">${esc(myName)} <span class="pill">You</span></div>
+      <span style="font-size:11px;color:var(--green);font-weight:600">✓ Connected</span>
+    </div>
+    <div class="card-dark tc sm" style="margin-top:6px;color:var(--muted)">
+      ⏳ Waiting for the room to confirm…
+    </div>`;
+  document.getElementById('lob-start').style.display='none';
+  document.getElementById('lob-wait').style.display='block';
+  document.getElementById('lob-wait').textContent='Waiting for host to start…';
+  document.getElementById('lob-settings').style.display='none';
+  showScreen('lobby');
+}
+
+function showLobby(){
+  document.getElementById('lob-code').textContent=roomCode;
+  renderLobby(G.players,roomCode);
+  showScreen('lobby');
+}
+
+function renderLobby(players,code){
+  if(code)document.getElementById('lob-code').textContent=code;
+  document.getElementById('lob-cnt').textContent=players.length;
+  document.getElementById('lob-players').innerHTML=players.map(p=>`
+    <div class="player-row">
+      <div class="avatar" style="background:${acolor(p.name)}">${p.name[0].toUpperCase()}</div>
+      <div class="fill" style="font-weight:600">${esc(p.name)}</div>
+      ${p.id===myId?'<span class="pill">You</span>':''}
+      ${p.id===(isHost?myId:players[0].id)?'<span class="p-tag">HOST</span>':''}
+    </div>`).join('');
+  const startBtn=document.getElementById('lob-start');
+  const waitMsg=document.getElementById('lob-wait');
+  const settings=document.getElementById('lob-settings');
+  if(isHost){
+    startBtn.style.display='flex';
+    waitMsg.style.display='none';
+    settings.style.display='flex';
+    startBtn.disabled=players.length<2;
+    startBtn.textContent=players.length<2?'⏳ Need 1 more player…':'⚡ Start Game';
+  } else {
+    startBtn.style.display='none';
+    waitMsg.style.display='block';
+    settings.style.display='none';
+  }
+}
+
+function copyCode(){
+  const code=document.getElementById('lob-code').textContent;
+  navigator.clipboard.writeText(code).then(()=>toast('Code copied!','ok'))
+    .catch(()=>toast(code,''));
+}
+
+// ═══════════════════ UI: BIDDING ═══════════════════
+function renderBidding(s){
+  _curBid=s.currentBid||0;
+  _curBidder=s.currentBidder||null;
+  amTop=_curBidder===myId;
+
+  document.getElementById('bid-round').textContent=s.currentRound;
+  document.getElementById('bid-total').textContent=s.totalRounds;
+  document.getElementById('bid-mycoins').textContent=myBalance;
+  document.getElementById('bid-rbar').style.width=((s.currentRound-1)/s.totalRounds*100)+'%';
+
+  const item=s.currentItem;
+  document.getElementById('bid-em').textContent=item.emoji;
+  document.getElementById('bid-name').textContent=item.name;
+  document.getElementById('bid-desc').textContent=blindMode?'???':item.desc;
+  const valWrap=document.getElementById('bid-val-wrap');
+  if(blindMode){
+    valWrap.className='item-val blind';
+    valWrap.innerHTML='🔒 &nbsp;? ? ?';
+  } else {
+    valWrap.className='item-val';
+    valWrap.innerHTML='🏷️ Worth <span id="bid-val">'+item.value+'</span> coins';
+  }
+  document.getElementById('bid-item-sm').textContent=item.emoji+' '+item.name;
+
+  updateBidDisplay(s.currentBid,s.currentBidder,
+    s.currentBidder?s.players.find(p=>p.id===s.currentBidder)?.name:null);
+  setTimer(s.timeLeft??TIMER_SEC);
+  updateBidButtons(s.currentBid);
+  renderChips(s.players);
+}
+
+function updateBidDisplay(amount,bidderId,bidderName){
+  _curBid=amount||0;_curBidder=bidderId||null;
+  document.getElementById('bid-cur').innerHTML=
+    _curBid>0?`${_curBid} <span style="font-size:15px;color:var(--muted)">coins</span>`
+             :`0 <span style="font-size:15px;color:var(--muted)">coins</span>`;
+  document.getElementById('bid-who').textContent=bidderName
+    ?(bidderId===myId?'👑 You are leading!':'by '+bidderName)
+    :'No bids yet — be first!';
+}
+
+function updateBidButtons(curBid){
+  if(curBid!==undefined)_curBid=curBid;
+  amTop=_curBidder===myId;
+  const minBid=Math.max(_curBid+MIN_INC,MIN_INC);
+  document.getElementById('qmin').textContent=minBid;
+  document.getElementById('q50').textContent=Math.max(_curBid+50,minBid+40);
+  document.getElementById('q100').textContent=Math.max(_curBid+100,minBid+90);
+
+  const canBid=!myPassed&&!amTop;
+  document.getElementById('bid-btns').querySelectorAll('.btn').forEach(b=>b.disabled=!canBid);
+  document.getElementById('bid-custom').disabled=!canBid;
+  document.querySelector('.custom-row .btn').disabled=!canBid;
+
+  const passBtn=document.getElementById('pass-btn');
+  passBtn.disabled=myPassed||amTop;
+  passBtn.style.display=myPassed||amTop?'none':'flex';
+
+  document.getElementById('top-msg').style.display=amTop?'block':'none';
+  document.getElementById('pass-msg').style.display=myPassed?'block':'none';
+  document.getElementById('bid-mycoins').textContent=myBalance;
+}
+
+function renderChips(players){
+  document.getElementById('chips').innerHTML=players.map(p=>`
+    <div class="chip ${p.passed?'passed':''} ${p.id===_curBidder?'top':''}">
+      <span class="dot"></span>${esc(p.name)}
+    </div>`).join('');
+}
+
+function setTimer(t){
+  const arc=document.getElementById('t-arc');
+  const num=document.getElementById('t-num');
+  const offset=CIRC*(1-t/TIMER_SEC);
+  arc.style.strokeDashoffset=offset;
+  arc.style.stroke=t<=10?'var(--red)':t<=15?'#ff9500':'var(--gold)';
+  num.textContent=t;
+  num.className='t-num'+(t<=10?' danger':'');
+}
+
+function addFeed(html){
+  feedLines.unshift(html);
+  if(feedLines.length>10)feedLines.pop();
+  document.getElementById('feed').innerHTML=feedLines.map(f=>`<div class="feed-item">${f}</div>`).join('');
+}
+
+// ═══════════════════ UI: ROUND END ═══════════════════
+function renderRoundEnd(data){
+  const{winner,item,bidAmount,players,currentRound,totalRounds}=data;
+  document.getElementById('re-em').textContent=winner?item.emoji:'😔';
+  if(winner){
+    document.getElementById('re-lbl').textContent=winner.id===myId?'🎉 YOU WON!':'WINNER';
+    document.getElementById('re-name').textContent=winner.name;
+    // In blind mode, reveal value dramatically + show deal analysis
+    const deal=item.value>bidAmount
+      ?`<span style="color:var(--green)">Great deal! +${item.value-bidAmount}</span>`
+      :item.value<bidAmount
+        ?`<span style="color:var(--red)">Overpaid by ${bidAmount-item.value}</span>`
+        :'Exactly right';
+    const valueReveal=blindMode
+      ?`<span style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px">🔓 Item revealed: worth <b style="color:var(--gold)">${item.value} coins</b></span>`
+      :'';
+    document.getElementById('re-det').innerHTML=
+      `${valueReveal}<b>${esc(item.name)}</b> for <span style="color:var(--gold);font-weight:700">${bidAmount} coins</span>`
+      +(bidAmount>0?`<br><span style="font-size:12px">${deal}</span>`:'');
+  } else {
+    document.getElementById('re-lbl').textContent='NO BIDS';
+    document.getElementById('re-name').textContent='Item unsold';
+    const valueReveal=blindMode?` (worth ${item.value} coins)`:'';
+    document.getElementById('re-det').textContent=item.name+valueReveal+' goes back to the vault.';
+  }
+  document.getElementById('re-next').textContent=currentRound>=totalRounds?'🏁 Final results coming…':'Next round starting soon…';
+  const sorted=[...players].sort((a,b)=>b.score-a.score);
+  // Only show own balance — other players' balances are private
+  document.getElementById('re-scores').innerHTML=sorted.map(p=>`
+    <div class="player-row">
+      <div class="avatar" style="background:${acolor(p.name)}">${p.name[0].toUpperCase()}</div>
+      <div class="fill" style="font-weight:600">${esc(p.name)}${p.id===myId?' <span style="font-size:11px;color:var(--muted)">(you)</span>':''}</div>
+      <span style="font-size:13px;color:var(--gold);font-weight:700">${p.score}pts</span>
+      ${p.id===myId?`<span class="sm" style="margin-left:4px">💰${p.balance}</span>`:''}
+    </div>`).join('');
+  showScreen('round-end');
+}
+
+// ═══════════════════ UI: GAME END ═══════════════════
+function renderGameEnd(finalScores){
+  showScreen('game-end');
+  const podium=document.getElementById('podium');
+  const top3=finalScores.slice(0,3);
+  const order=[1,0,2];
+  podium.innerHTML='';
+  order.forEach(idx=>{
+    if(!top3[idx])return;
+    const p=top3[idx],rank=idx+1;
+    const crown=['👑','🥈','🥉'][idx];
+    const el=document.createElement('div');
+    el.className=`podium-slot p${rank}`;
+    el.innerHTML=`<div class="podium-crown">${crown}</div><div class="podium-name" title="${esc(p.name)}">${esc(p.name)}</div><div class="podium-score">${p.score}pts</div><div class="podium-block"></div>`;
+    podium.appendChild(el);
+  });
+  document.getElementById('final-list').innerHTML=finalScores.map((p,i)=>`
+    <div class="final-row">
+      <div class="final-rank ${i===0?'gold':''}">${i+1}</div>
+      <div><div style="font-weight:700">${esc(p.name)} ${p.id===myId?'<span class="sm">(you)</span>':''}</div><div class="final-bal">💰${p.balance} left · ${p.itemCount} items</div></div>
+      <div class="final-score">${p.score}</div>
+    </div>`).join('');
+}
+
+// ═══════════════════ HOST: HELPERS ═══════════════════
+function snapshot(){
+  return G.players.map(p=>({id:p.id,name:p.name,balance:p.balance,score:p.score,itemCount:p.items.length,passed:p.passed}));
+}
+function roundState(){
+  return{players:snapshot(),state:G.state,currentRound:G.currentRound,totalRounds:G.totalRounds,currentItem:G.currentItem,currentBid:G.currentBid,currentBidder:G.currentBidder,timeLeft:G.timeLeft,blindMode:G.blindMode};
+}
+
+// ═══════════════════ HELPERS ═══════════════════
+function mkCode(){
+  const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:4},()=>c[~~(Math.random()*c.length)]).join('');
+}
+const ACOLORS=['#7b2fd4','#e04040','#2196f3','#4caf50','#ff9800','#e91e63','#00bcd4','#ff5722'];
+function acolor(name){
+  let h=0;for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))&0xffff;
+  return ACOLORS[h%ACOLORS.length];
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='show'+(type?' '+type:'');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.className='',2800);
+}
+</script>
+</body>
+</html>
