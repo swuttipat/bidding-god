@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0d0b1e">
-<title>Bidding God 🔨 v1.8</title>
+<title>Bidding God 🔨 v1.9</title>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -202,7 +202,7 @@ input::placeholder{color:var(--muted)}
     <div class="logo-title">BIDDING GOD</div>
     <div class="logo-sub">Outbid everyone. Own everything.</div>
     <div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;background:rgba(123,47,212,.18);border:1px solid rgba(123,47,212,.35);border-radius:999px;padding:3px 12px;font-size:11px;color:var(--muted);letter-spacing:1px">
-      <span style="color:var(--purple);font-weight:700">v1.8</span>
+      <span style="color:var(--purple);font-weight:700">v1.9</span>
       <span>·</span>
       <span>Blind Mode · Catalog · Auto-reconnect</span>
     </div>
@@ -273,6 +273,19 @@ input::placeholder{color:var(--muted)}
           <input type="checkbox" id="catalog-toggle">
           <span class="toggle-track"></span>
         </label>
+      </div>
+
+      <!-- Item count picker -->
+      <div style="background:var(--sur2);border-radius:var(--r);padding:12px 14px">
+        <div style="font-weight:700;font-size:14px;margin-bottom:8px">🎯 Number of Auction Items</div>
+        <div class="row gap8" style="align-items:center">
+          <button class="btn btn-ghost btn-sm" style="width:36px;font-size:18px;padding:0" onclick="adjustItems(-1)">−</button>
+          <input type="number" id="items-count" min="1" max="100" value="10"
+            style="width:72px;padding:8px;font-size:22px;font-weight:900;text-align:center;border-radius:10px"
+            oninput="_itemsEdited=true">
+          <button class="btn btn-ghost btn-sm" style="width:36px;font-size:18px;padding:0" onclick="adjustItems(1)">+</button>
+        </div>
+        <div class="sm" id="items-suggest" style="margin-top:7px;color:var(--muted)">Suggested based on players</div>
       </div>
     </div>
   </div>
@@ -533,7 +546,7 @@ const START_BALANCE=1000;
 const MIN_INC=10;
 const CIRC=2*Math.PI*30; // 188.5
 
-const VERSION='1.8';
+const VERSION='1.9';
 
 // PeerJS ICE config — multiple STUN servers for better production NAT traversal
 const PEER_CONFIG={
@@ -562,6 +575,18 @@ let timerHandle=null;
 let _reconnectTimer=null;
 let _reconnectCount=0;
 let _gameHasStarted=false;
+
+// Item count picker state
+let _itemsEdited=false; // true once host manually changes the item count
+function adjustItems(delta){
+  const el=document.getElementById('items-count');
+  if(!el)return;
+  el.value=Math.min(100,Math.max(1,(parseInt(el.value,10)||10)+delta));
+  _itemsEdited=true;
+}
+function suggestedItems(playerCount){
+  return Math.min(100,Math.max(5,playerCount*5));
+}
 
 // Authoritative game state (host only, fully managed here)
 let G={
@@ -802,6 +827,10 @@ const CATALOG_SECONDS=45;
 
 function hostStart(){
   if(G.players.length<2){toast('Need at least 2 players!','err');return;}
+  // Read host-chosen item count (clamped to available pool)
+  const itemCount=Math.min(ITEMS.length,Math.max(1,parseInt(document.getElementById('items-count').value,10)||10));
+  G.totalRounds=itemCount;
+  _itemsEdited=false; // reset for next game
   const shuffled=[...ITEMS].sort(()=>Math.random()-.5);
   // Randomise each item's value ±40% from its base, rounded to nearest 5
   G.roundItems=shuffled.slice(0,G.totalRounds).map(item=>{
@@ -944,8 +973,16 @@ function hostEndRound(){
 function hostEndGame(){
   G.state='gameEnd';
   const finalScores=G.players
-    .map(p=>({id:p.id,name:p.name,score:p.score,balance:p.balance,itemCount:p.items.length,items:p.items}))
-    .sort((a,b)=>b.score-a.score||b.balance-a.balance);
+    .map(p=>({
+      id:p.id,
+      name:p.name,
+      itemScore:p.score,          // total face value of items won
+      balance:p.balance,          // remaining coins
+      score:p.score+p.balance,    // FINAL SCORE = items + leftover budget
+      itemCount:p.items.length,
+      items:p.items,
+    }))
+    .sort((a,b)=>b.score-a.score||b.itemScore-a.itemScore);
   broadcastAll({type:'game_end',finalScores});
 }
 
@@ -1202,6 +1239,15 @@ function renderLobby(players,code){
     settings.style.display='flex';
     startBtn.disabled=players.length<2;
     startBtn.textContent=players.length<2?'⏳ Need 1 more player…':'⚡ Start Game';
+    // Update item count suggestion whenever player count changes
+    const suggested=suggestedItems(players.length);
+    const countEl=document.getElementById('items-count');
+    const suggestEl=document.getElementById('items-suggest');
+    if(countEl&&suggestEl){
+      if(!_itemsEdited)countEl.value=suggested;
+      const perPlayer=Math.round(suggested/players.length*10)/10;
+      suggestEl.textContent=`Suggested: ${suggested} items (${players.length} players × ${perPlayer} each)`;
+    }
   } else {
     startBtn.style.display='none';
     waitMsg.style.display='block';
@@ -1330,13 +1376,17 @@ function renderRoundEnd(data){
   document.getElementById('re-next').textContent=currentRound>=totalRounds?'🏁 Final results coming…':'Next round starting soon…';
   const sorted=[...players].sort((a,b)=>b.score-a.score);
   // Only show own balance — other players' balances are private
+  // Score here = item values only; final score at game end adds remaining balance
   document.getElementById('re-scores').innerHTML=sorted.map(p=>`
     <div class="player-row">
       <div class="avatar" style="background:${acolor(p.name)}">${p.name[0].toUpperCase()}</div>
-      <div class="fill" style="font-weight:600">${esc(p.name)}${p.id===myId?' <span style="font-size:11px;color:var(--muted)">(you)</span>':''}</div>
-      <span style="font-size:13px;color:var(--gold);font-weight:700">${p.score}pts</span>
-      ${p.id===myId?`<span class="sm" style="margin-left:4px">💰${p.balance}</span>`:''}
-    </div>`).join('');
+      <div class="fill col" style="gap:1px">
+        <span style="font-weight:600">${esc(p.name)}${p.id===myId?' <span style="font-size:11px;color:var(--muted)">(you)</span>':''}</span>
+        ${p.id===myId?`<span class="sm" style="color:var(--muted)">💰 ${p.balance} coins left</span>`:''}
+      </div>
+      <span style="font-size:13px;color:var(--gold);font-weight:700">🏷️${p.score}</span>
+    </div>`).join('')+
+    `<div class="sm tc" style="margin-top:8px;color:var(--muted)">Final score = items + remaining coins</div>`;
   showScreen('round-end');
 }
 
@@ -1353,13 +1403,16 @@ function renderGameEnd(finalScores){
     const crown=['👑','🥈','🥉'][idx];
     const el=document.createElement('div');
     el.className=`podium-slot p${rank}`;
-    el.innerHTML=`<div class="podium-crown">${crown}</div><div class="podium-name" title="${esc(p.name)}">${esc(p.name)}</div><div class="podium-score">${p.score}pts</div><div class="podium-block"></div>`;
+    el.innerHTML=`<div class="podium-crown">${crown}</div><div class="podium-name" title="${esc(p.name)}">${esc(p.name)}</div><div class="podium-score">${p.score} total</div><div class="podium-block"></div>`;
     podium.appendChild(el);
   });
   document.getElementById('final-list').innerHTML=finalScores.map((p,i)=>`
     <div class="final-row">
       <div class="final-rank ${i===0?'gold':''}">${i+1}</div>
-      <div><div style="font-weight:700">${esc(p.name)} ${p.id===myId?'<span class="sm">(you)</span>':''}</div><div class="final-bal">💰${p.balance} left · ${p.itemCount} items</div></div>
+      <div class="fill">
+        <div style="font-weight:700">${esc(p.name)} ${p.id===myId?'<span class="sm">(you)</span>':''}</div>
+        <div class="final-bal">🏷️ ${p.itemScore} items &nbsp;+&nbsp; 💰${p.balance} left</div>
+      </div>
       <div class="final-score">${p.score}</div>
     </div>`).join('');
 }
